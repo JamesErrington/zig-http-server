@@ -1,6 +1,11 @@
 const std = @import("std");
+
 const os = std.os;
+const mem = std.mem;
+const debug = std.debug;
 const assert = std.debug.assert;
+
+const Header = std.StringHashMap([][]const u8);
 
 pub fn main() !void {
     var sockfd = try os.socket(2, 1, 6);
@@ -24,6 +29,14 @@ pub fn main() !void {
         const bytes = try os.read(connfd, &buffer);
         std.log.info("Read {} bytes:", .{bytes});
         std.debug.print("{s}\n", .{buffer[0..bytes]});
+
+        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        var arena = std.heap.ArenaAllocator.init(gpa.allocator());
+        const allocator = arena.allocator();
+        defer arena.deinit();
+
+        var headers = Header.init(allocator);
+        parse_request(buffer[0..bytes], &headers);
 
         _ = try os.write(connfd, &buffer);   
     }
@@ -53,6 +66,15 @@ fn make_sockaddr(host: []const u8, port: u16) !os.sockaddr {
         }
     }
 
-    std.debug.print("{any}\n", .{addr.data});
     return addr;
+}
+
+fn parse_request(bytes: []const u8, headers: *Header) void {
+    _ = headers;
+    var iter = mem.tokenizeAny(u8, bytes, "\r\n");
+    const request_line = iter.next() orelse unreachable;
+
+    const method_end_idx = mem.indexOfScalar(u8, request_line, ' ') orelse unreachable;
+    const method_str = request_line[0..method_end_idx];
+    debug.print("{s}\n", .{method_str});
 }
