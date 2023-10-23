@@ -1,6 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const http = @import("./http.zig");
+const res = @import("./response.zig");
 
 const os = std.os;
 const mem = std.mem;
@@ -42,7 +43,12 @@ pub const Server = struct {
             var headers = Header.init(allocator);
             parse_request(buffer[0..bytes], &headers);
 
-            _ = try os.write(connfd, &buffer);   
+            var builder = res.Response.builder();
+            const response = builder.status(http.Status.OK).build();
+            debug.print("Response(Version: {}, Status: {})", .{response.parts.version, response.parts.status});
+            var response_buffer: [1024]u8 = undefined;
+
+            _ = try os.write(connfd, response.into_buffer(&response_buffer));   
         }
     }
 };

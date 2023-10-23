@@ -6,3 +6,9 @@ pub const Version = enum {
 pub const Method = enum {
     GET,
 };
+
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+pub const Status = enum(u10) {
+    OK = 200,
+    INTERNAL_SERVER_ERROR = 500,
+};
